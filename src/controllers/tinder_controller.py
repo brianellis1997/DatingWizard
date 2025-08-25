@@ -59,34 +59,39 @@ class TinderController:
         logger.info("Navigating to Tinder...")
         self.driver.get("https://tinder.com")
         
-        time.sleep(3)  # Wait for page load
+        time.sleep(5)  # Wait for page load
         
         try:
-            # Click login button
-            login_btn = self.wait.until(
-                EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Log in')]"))
-            )
-            login_btn.click()
+            # Wait longer for login button
+            wait_long = WebDriverWait(self.driver, 30)
             
-            if use_phone:
-                # Phone number login flow
-                phone_option = self.wait.until(
-                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Log in with phone number')]"))
+            # Try to find and click login button
+            try:
+                login_btn = wait_long.until(
+                    EC.element_to_be_clickable((By.XPATH, "//button[contains(text(), 'Log in')]"))
                 )
-                phone_option.click()
-                logger.info("Please complete phone authentication manually...")
-                input("Press Enter after completing phone authentication...")
-            else:
-                # Email/Facebook login flow
-                logger.info("Please complete the login process manually...")
-                input("Press Enter after logging in...")
+                login_btn.click()
+            except:
+                # Alternative: look for "Sign in" or other variations
+                try:
+                    login_btn = self.driver.find_element(By.XPATH, "//a[contains(text(), 'Log in')]")
+                    login_btn.click()
+                except:
+                    logger.info("Could not find login button automatically")
+            
+            # Manual login
+            logger.info("Please complete the login process manually in the browser...")
+            logger.info("This includes any popups, permissions, or verification steps")
+            input("Press Enter in the terminal AFTER you are fully logged in and can see profiles...")
                 
             logger.success("Login successful!")
             return True
             
-        except TimeoutException:
-            logger.error("Login failed - timeout")
-            return False
+        except Exception as e:
+            logger.warning(f"Login process issue: {e}")
+            logger.info("Manual login required...")
+            input("Press Enter after manually logging in...")
+            return True
             
     def get_current_profile(self) -> Dict:
         """Extract current profile information"""
