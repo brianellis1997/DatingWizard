@@ -29,21 +29,38 @@ class TinderController:
         """Initialize Chrome driver with optimal settings"""
         options = webdriver.ChromeOptions()
         
-        # Essential options for automation
+        # Essential options for stealth
         options.add_argument('--disable-blink-features=AutomationControlled')
         options.add_experimental_option("excludeSwitches", ["enable-automation"])
         options.add_experimental_option('useAutomationExtension', False)
         options.add_argument("--disable-notifications")
+        options.add_argument("--disable-popup-blocking")
+        options.add_argument("--disable-extensions-file-access-check")
+        options.add_argument("--disable-extensions-http-throttling")
         
         # Performance options
         options.add_argument('--no-sandbox')
         options.add_argument('--disable-dev-shm-usage')
+        options.add_argument('--disable-gpu')
+        options.add_argument('--disable-web-security')
+        options.add_argument('--allow-running-insecure-content')
         
         if self.headless:
             options.add_argument('--headless')
+        else:
+            # Make window look normal
+            options.add_argument('--start-maximized')
             
-        # User agent to appear more human-like
-        options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
+        # Realistic user agent
+        options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+        
+        # Add preferences to avoid detection
+        prefs = {
+            "profile.default_content_setting_values.notifications": 2,
+            "profile.default_content_settings.popups": 0,
+            "profile.managed_default_content_settings.images": 2
+        }
+        options.add_experimental_option("prefs", prefs)
         
         # For newer selenium versions
         from selenium.webdriver.chrome.service import Service

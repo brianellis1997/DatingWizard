@@ -165,9 +165,18 @@ class DatingWizard:
             try:
                 # Get current profile
                 profile = self.tinder.get_current_profile()
-                if not profile:
-                    logger.warning("No profile found")
-                    time.sleep(5)
+                if not profile or not profile.get('name'):
+                    logger.warning("No profile found or profile data incomplete")
+                    print("\n" + "="*50)
+                    print("Waiting for profile to load...")
+                    print("Try refreshing the browser or navigating manually to profiles")
+                    print("="*50)
+                    decision = input("Press [R]efresh, [C]ontinue waiting, or [Q]uit? ").lower()
+                    if decision == 'q':
+                        break
+                    elif decision == 'r':
+                        self.tinder.driver.refresh()
+                    time.sleep(3)
                     continue
                     
                 # Display profile info
