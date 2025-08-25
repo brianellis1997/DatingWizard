@@ -21,7 +21,7 @@ sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 from controllers.tinder_controller import TinderController
 from analyzers.profile_analyzer import ProfileAnalyzer
 from messaging.message_generator import MessageGenerator, ConversationStage
-from calendar.calendar_integration import CalendarManager
+from calendar_manager.calendar_integration import CalendarManager
 
 
 class DatingWizard:
