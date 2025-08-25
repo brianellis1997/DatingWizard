@@ -45,10 +45,10 @@ class TinderController:
         # User agent to appear more human-like
         options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36')
         
-        self.driver = webdriver.Chrome(
-            ChromeDriverManager().install(),
-            options=options
-        )
+        # For newer selenium versions
+        from selenium.webdriver.chrome.service import Service
+        service = Service(ChromeDriverManager().install())
+        self.driver = webdriver.Chrome(service=service, options=options)
         self.wait = WebDriverWait(self.driver, 10)
         
         # Execute script to remove webdriver property
