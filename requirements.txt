@@ -1,0 +1,50 @@
+# Core automation
+selenium
+pyautogui
+webdriver-manager
+
+# Image processing and OCR
+opencv-python
+Pillow
+pytesseract
+numpy
+
+# Machine Learning
+scikit-learn
+torch
+torchvision
+transformers
+
+# NLP and Text Analysis
+spacy
+textblob
+
+# LLM Integration
+openai
+anthropic
+
+# Calendar Integration
+caldav
+icalendar
+pytz
+
+# Database
+sqlalchemy
+
+# Utilities
+python-dotenv
+requests
+beautifulsoup4
+lxml
+
+# Security
+cryptography
+
+# Logging and Monitoring
+loguru
+tqdm
+
+# Development
+pytest
+black
+flake8

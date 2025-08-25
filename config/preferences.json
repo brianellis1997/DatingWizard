@@ -1,0 +1,93 @@
+{
+  "age_range": {
+    "min": 25,
+    "max": 35
+  },
+  "bio_keywords": {
+    "positive": [
+      "fitness",
+      "gym",
+      "travel",
+      "adventure",
+      "foodie",
+      "coffee",
+      "wine",
+      "hiking",
+      "yoga",
+      "professional",
+      "ambitious",
+      "entrepreneur",
+      "creative",
+      "music",
+      "art",
+      "reading",
+      "cooking"
+    ],
+    "negative": [
+      "drama",
+      "games",
+      "hookup",
+      "sugar",
+      "venmo",
+      "cashapp",
+      "OnlyFans",
+      "OF",
+      "married",
+      "poly",
+      "ENM",
+      "420",
+      "drugs"
+    ],
+    "required": []
+  },
+  "interests": {
+    "preferred": [
+      "fitness",
+      "hiking",
+      "yoga",
+      "reading",
+      "cooking",
+      "travel",
+      "photography",
+      "music",
+      "dancing"
+    ],
+    "dealbreakers": []
+  },
+  "messaging": {
+    "style": "casual_witty",
+    "goals": ["build_rapport", "get_number", "schedule_date"],
+    "opener_style": "personalized",
+    "use_humor": true,
+    "emoji_usage": "moderate",
+    "message_length": "concise"
+  },
+  "automation": {
+    "swipe_threshold": 0.6,
+    "super_like_threshold": 0.85,
+    "max_swipes_per_hour": 100,
+    "min_delay_seconds": 2,
+    "max_delay_seconds": 5,
+    "auto_message": true,
+    "auto_swipe": true,
+    "hours_active": ["09:00", "23:00"]
+  },
+  "date_preferences": {
+    "preferred_days": ["Thursday", "Friday", "Saturday", "Sunday"],
+    "preferred_times": ["18:00-21:00", "11:00-14:00"],
+    "preferred_activities": [
+      "coffee",
+      "drinks",
+      "dinner",
+      "brunch",
+      "walk in the park",
+      "museum"
+    ],
+    "preferred_locations": [
+      "downtown",
+      "local coffee shop",
+      "trendy bar",
+      "nice restaurant"
+    ]
+  }
+}
