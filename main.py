@@ -10,7 +10,7 @@ import time
 import random
 import json
 from datetime import datetime
-from typing import Dict, Optional
+from typing import Dict, Optional, List
 from dotenv import load_dotenv
 from loguru import logger
 import argparse
