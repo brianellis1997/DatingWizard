@@ -1,4 +1,57 @@
 {
+  "version": "2.0",
+  "partner_preferences": {
+    "physical": {
+      "reference_images": [],
+      "importance_weight": 0.6,
+      "features": {
+        "face_type": "",
+        "body_type": "",
+        "height_preference": "",
+        "style_preference": ""
+      }
+    },
+    "personality": {
+      "traits": [
+        "health-conscious",
+        "fitness-oriented",
+        "adventurous",
+        "food-loving",
+        "social",
+        "sophisticated",
+        "career-focused",
+        "ambitious",
+        "entrepreneurial",
+        "creative",
+        "artistic",
+        "intellectual"
+      ],
+      "importance_weight": 0.3,
+      "communication_style": "",
+      "lifestyle_compatibility": []
+    },
+    "interests": {
+      "shared_interests": [
+        "fitness",
+        "hiking",
+        "yoga",
+        "reading",
+        "cooking",
+        "travel",
+        "photography",
+        "music",
+        "dancing"
+      ],
+      "importance_weight": 0.1,
+      "dealbreaker_interests": []
+    }
+  },
+  "matching_criteria": {
+    "minimum_score": 0.6,
+    "super_like_score": 0.85,
+    "diversity_factor": 0.2,
+    "recency_weight": 0.1
+  },
   "age_range": {
     "min": 25,
     "max": 35
@@ -40,23 +93,13 @@
     ],
     "required": []
   },
-  "interests": {
-    "preferred": [
-      "fitness",
-      "hiking",
-      "yoga",
-      "reading",
-      "cooking",
-      "travel",
-      "photography",
-      "music",
-      "dancing"
-    ],
-    "dealbreakers": []
-  },
   "messaging": {
     "style": "casual_witty",
-    "goals": ["build_rapport", "get_number", "schedule_date"],
+    "goals": [
+      "build_rapport",
+      "get_number",
+      "schedule_date"
+    ],
     "opener_style": "personalized",
     "use_humor": true,
     "emoji_usage": "moderate",
@@ -70,11 +113,22 @@
     "max_delay_seconds": 5,
     "auto_message": true,
     "auto_swipe": true,
-    "hours_active": ["09:00", "23:00"]
+    "hours_active": [
+      "09:00",
+      "23:00"
+    ]
   },
   "date_preferences": {
-    "preferred_days": ["Thursday", "Friday", "Saturday", "Sunday"],
-    "preferred_times": ["18:00-21:00", "11:00-14:00"],
+    "preferred_days": [
+      "Thursday",
+      "Friday",
+      "Saturday",
+      "Sunday"
+    ],
+    "preferred_times": [
+      "18:00-21:00",
+      "11:00-14:00"
+    ],
     "preferred_activities": [
       "coffee",
       "drinks",

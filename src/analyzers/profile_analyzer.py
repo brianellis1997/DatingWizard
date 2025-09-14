@@ -16,6 +16,12 @@ import re
 from loguru import logger
 import json
 import os
+import sys
+from pathlib import Path
+
+# Import our preference manager
+sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
+from src.utils.preference_manager import PreferenceManager
 
 
 class ProfileAnalyzer:
@@ -23,11 +29,14 @@ class ProfileAnalyzer:
     
     def __init__(self, preferences_path: str = "config/preferences.json"):
         self.preferences = self._load_preferences(preferences_path)
+        self.pref_manager = PreferenceManager(preferences_path)
         self.image_model = self._initialize_image_model()
         self.transform = self._get_image_transform()
         self.positive_examples = []
         self.negative_examples = []
+        self.reference_features = []
         self._load_training_examples()
+        self._load_reference_features()
         
     def _load_preferences(self, path: str) -> Dict:
         """Load user preferences from JSON file"""
@@ -93,6 +102,26 @@ class ProfileAnalyzer:
                         
         logger.info(f"Loaded {len(self.positive_examples)} positive and {len(self.negative_examples)} negative examples")
         
+    def _load_reference_features(self):
+        """Load user-provided reference images and extract features"""
+        try:
+            reference_images = self.pref_manager.get_reference_images()
+            self.reference_features = []
+            
+            for ref_img in reference_images:
+                features = self._extract_image_features(ref_img['file_path'])
+                if features is not None:
+                    self.reference_features.append({
+                        'features': features,
+                        'category': ref_img['category'],
+                        'description': ref_img['description'],
+                        'id': ref_img['id']
+                    })
+                    
+            logger.info(f"Loaded {len(self.reference_features)} reference image features")
+        except Exception as e:
+            logger.warning(f"Failed to load reference features: {e}")
+        
     def _extract_image_features(self, image_path: str) -> Optional[np.ndarray]:
         """Extract feature vector from image using ResNet"""
         try:
@@ -109,23 +138,45 @@ class ProfileAnalyzer:
             return None
             
     def analyze_screenshot(self, screenshot_path: str) -> Dict:
-        """Analyze a screenshot to make swipe decision"""
+        """Analyze a screenshot to make swipe decision using enhanced preference system"""
         logger.info(f"Analyzing screenshot: {screenshot_path}")
         
         # Extract bio text
         bio_text = self._extract_bio_text(screenshot_path)
-        bio_score = self._analyze_bio(bio_text)
         
-        # Extract and analyze profile images
+        # Get preference weights (with fallback to old system)
+        prefs = self.pref_manager.get_all_preferences()
+        if 'partner_preferences' in prefs:
+            physical_weight = prefs['partner_preferences']['physical']['importance_weight']
+            personality_weight = prefs['partner_preferences']['personality']['importance_weight']
+            interest_weight = prefs['partner_preferences']['interests']['importance_weight']
+        else:
+            # Fallback to old system
+            physical_weight = 0.6
+            personality_weight = 0.3
+            interest_weight = 0.1
+        
+        # Analyze different aspects
         image_score = self._analyze_profile_image(screenshot_path)
+        bio_score = self._analyze_bio_enhanced(bio_text)
+        interest_score = self._analyze_interests(bio_text)
         
-        # Combined score
-        final_score = (bio_score * 0.4) + (image_score * 0.6)
+        # Calculate weighted final score
+        final_score = (
+            (image_score * physical_weight) +
+            (bio_score * personality_weight) +
+            (interest_score * interest_weight)
+        )
+        
+        # Get decision thresholds
+        criteria = prefs.get('matching_criteria', {})
+        super_threshold = criteria.get('super_like_score', 0.85)
+        min_threshold = criteria.get('minimum_score', 0.6)
         
         # Determine decision
-        if final_score >= self.preferences['super_like_threshold']:
+        if final_score >= super_threshold:
             decision = 'super_like'
-        elif final_score >= self.preferences['swipe_threshold']:
+        elif final_score >= min_threshold:
             decision = 'right'
         else:
             decision = 'left'
@@ -133,10 +184,18 @@ class ProfileAnalyzer:
         result = {
             'decision': decision,
             'confidence': final_score,
-            'bio_score': bio_score,
-            'image_score': image_score,
+            'scores': {
+                'physical': image_score,
+                'personality': bio_score,
+                'interests': interest_score
+            },
+            'weights': {
+                'physical': physical_weight,
+                'personality': personality_weight,
+                'interests': interest_weight
+            },
             'bio_text': bio_text[:200] if bio_text else None,
-            'reasons': self._generate_reasons(bio_score, image_score, bio_text)
+            'reasons': self._generate_enhanced_reasons(image_score, bio_score, interest_score, bio_text)
         }
         
         logger.info(f"Decision: {decision} (confidence: {final_score:.2f})")
@@ -196,7 +255,8 @@ class ProfileAnalyzer:
                 logger.debug(f"Found positive keyword: {keyword}")
                 
         # Check interests
-        for interest in self.preferences['interests']['preferred']:
+        interests = self.preferences.get('interests', {}).get('preferred', [])
+        for interest in interests:
             if interest.lower() in bio_lower:
                 score += 0.05
                 
@@ -204,17 +264,34 @@ class ProfileAnalyzer:
         return min(score, 1.0)
         
     def _analyze_profile_image(self, screenshot_path: str) -> float:
-        """Analyze profile image and return similarity score"""
+        """Analyze profile image and return similarity score using multiple methods"""
         try:
             # Extract features from screenshot
             features = self._extract_image_features(screenshot_path)
             
             if features is None:
                 return 0.5  # Neutral score if can't extract features
-                
-            # If we have training examples, compare
+            
+            scores = []
+            weights = []
+            
+            # Method 1: Reference image similarity (highest priority)
+            if self.reference_features:
+                ref_similarities = []
+                for ref_data in self.reference_features:
+                    sim = cosine_similarity(
+                        features.reshape(1, -1),
+                        ref_data['features'].reshape(1, -1)
+                    )[0][0]
+                    ref_similarities.append(sim)
+                    
+                avg_ref_similarity = np.mean(ref_similarities)
+                scores.append(avg_ref_similarity)
+                weights.append(0.7)  # High weight for reference images
+                logger.debug(f"Reference similarity: {avg_ref_similarity:.3f}")
+            
+            # Method 2: Training examples (medium priority)
             if self.positive_examples:
-                # Calculate similarity to positive examples
                 pos_similarities = []
                 for pos_example in self.positive_examples:
                     sim = cosine_similarity(
@@ -225,8 +302,7 @@ class ProfileAnalyzer:
                     
                 avg_pos_similarity = np.mean(pos_similarities)
                 
-                # Calculate similarity to negative examples (if any)
-                avg_neg_similarity = 0.5
+                # Factor in negative examples if available
                 if self.negative_examples:
                     neg_similarities = []
                     for neg_example in self.negative_examples:
@@ -237,12 +313,22 @@ class ProfileAnalyzer:
                         neg_similarities.append(sim)
                     avg_neg_similarity = np.mean(neg_similarities)
                     
-                # Score based on relative similarity
-                score = (avg_pos_similarity - avg_neg_similarity + 1) / 2
-                return max(0, min(1, score))
-                
+                    # Relative scoring
+                    training_score = (avg_pos_similarity - avg_neg_similarity + 1) / 2
+                else:
+                    training_score = avg_pos_similarity
+                    
+                scores.append(training_score)
+                weights.append(0.3)  # Lower weight when reference images exist
+                logger.debug(f"Training similarity: {training_score:.3f}")
+            
+            # Calculate weighted average if we have scores
+            if scores:
+                total_weight = sum(weights)
+                final_score = sum(score * weight for score, weight in zip(scores, weights)) / total_weight
+                return max(0, min(1, final_score))
             else:
-                # No training examples, return neutral
+                # No comparison data, return neutral
                 return 0.5
                 
         except Exception as e:
@@ -250,27 +336,10 @@ class ProfileAnalyzer:
             return 0.5
             
     def _generate_reasons(self, bio_score: float, image_score: float, bio_text: str) -> List[str]:
-        """Generate human-readable reasons for the decision"""
-        reasons = []
-        
-        if bio_score > 0.7:
-            reasons.append("Bio contains interesting keywords")
-        elif bio_score < 0.3:
-            reasons.append("Bio lacks appealing content")
-            
-        if image_score > 0.7:
-            reasons.append("Photos match your preferences")
-        elif image_score < 0.3:
-            reasons.append("Photos don't match typical preferences")
-            
-        # Check for specific interests
-        if bio_text:
-            bio_lower = bio_text.lower()
-            for interest in self.preferences['interests']['preferred']:
-                if interest.lower() in bio_lower:
-                    reasons.append(f"Shares interest: {interest}")
-                    
-        return reasons
+        """Generate human-readable reasons for the decision (legacy method)"""
+        # Use enhanced reasons if new preference system is available
+        interest_score = self._analyze_interests(bio_text) if bio_text else 0.5
+        return self._generate_enhanced_reasons(image_score, bio_score, interest_score, bio_text)
         
     def update_preferences(self, new_preferences: Dict):
         """Update user preferences"""
@@ -298,3 +367,94 @@ class ProfileAnalyzer:
                 Image.open(image_path).save(f"config/disliked_profiles/{filename}")
                 
             logger.info(f"Added training example: {'liked' if liked else 'disliked'}")
+    
+    def _analyze_bio_enhanced(self, bio_text: str) -> float:
+        """Enhanced bio analysis using new preference system"""
+        if not bio_text:
+            return 0.5
+            
+        prefs = self.pref_manager.get_all_preferences()
+        bio_lower = bio_text.lower()
+        score = 0.5
+        
+        # Check personality traits if specified
+        if 'partner_preferences' in prefs:
+            personality_prefs = prefs['partner_preferences']['personality']
+            traits = personality_prefs.get('traits', [])
+            
+            for trait in traits:
+                if trait.lower() in bio_lower:
+                    score += 0.15
+                    logger.debug(f"Found desired trait: {trait}")
+        
+        # Fall back to old bio analysis
+        old_score = self._analyze_bio(bio_text)
+        
+        # Combine scores
+        return min(1.0, (score + old_score) / 2)
+    
+    def _analyze_interests(self, bio_text: str) -> float:
+        """Analyze interests based on new preference system"""
+        if not bio_text:
+            return 0.5
+            
+        prefs = self.pref_manager.get_all_preferences()
+        bio_lower = bio_text.lower()
+        score = 0.5
+        
+        if 'partner_preferences' in prefs:
+            interest_prefs = prefs['partner_preferences']['interests']
+            
+            # Check for shared interests
+            shared_interests = interest_prefs.get('shared_interests', [])
+            for interest in shared_interests:
+                if interest.lower() in bio_lower:
+                    score += 0.2
+                    logger.debug(f"Found shared interest: {interest}")
+            
+            # Check for dealbreaker interests
+            dealbreakers = interest_prefs.get('dealbreaker_interests', [])
+            for dealbreaker in dealbreakers:
+                if dealbreaker.lower() in bio_lower:
+                    return 0.0  # Immediate disqualification
+        
+        return min(1.0, score)
+    
+    def _generate_enhanced_reasons(self, image_score: float, bio_score: float, 
+                                 interest_score: float, bio_text: str) -> List[str]:
+        """Generate enhanced reasons for the decision"""
+        reasons = []
+        
+        # Physical/image reasons
+        if image_score > 0.7:
+            if self.reference_features:
+                reasons.append("Strong similarity to your reference images")
+            else:
+                reasons.append("Photos match your learned preferences")
+        elif image_score < 0.3:
+            reasons.append("Photos don't align with your preferences")
+        
+        # Personality reasons
+        if bio_score > 0.7:
+            reasons.append("Bio shows compatible personality traits")
+        elif bio_score < 0.3:
+            reasons.append("Bio lacks appealing personality indicators")
+        
+        # Interest reasons  
+        if interest_score > 0.7:
+            reasons.append("Shows strong interest compatibility")
+        elif interest_score < 0.3:
+            reasons.append("Limited shared interests found")
+        
+        # Specific interest mentions
+        if bio_text:
+            prefs = self.pref_manager.get_all_preferences()
+            if 'partner_preferences' in prefs:
+                shared_interests = prefs['partner_preferences']['interests'].get('shared_interests', [])
+                bio_lower = bio_text.lower()
+                
+                for interest in shared_interests:
+                    if interest.lower() in bio_lower:
+                        reasons.append(f"Shares your interest in {interest}")
+        
+        return reasons
