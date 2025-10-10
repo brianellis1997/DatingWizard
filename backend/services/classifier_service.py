@@ -144,21 +144,34 @@ class ClassifierService:
     def __init__(self):
         """Initialize the classifier"""
         self.classifier = None
+        self.db_session = None
         self._init_classifier()
 
     def _init_classifier(self):
         """Initialize or reinitialize the classifier"""
         try:
-            db = SessionLocal()
-            self.classifier = DatabaseAwareClassifier(db)
+            # Close previous session if exists
+            if self.db_session:
+                self.db_session.close()
+
+            # Create new session
+            self.db_session = SessionLocal()
+            self.classifier = DatabaseAwareClassifier(self.db_session)
             logger.info("Database-aware classifier initialized successfully")
         except Exception as e:
             logger.error(f"Failed to initialize classifier: {e}")
+            if self.db_session:
+                self.db_session.close()
             raise
 
     def reload_classifier(self):
         """Reload the classifier (useful after preference updates)"""
         self._init_classifier()
+
+    def __del__(self):
+        """Cleanup database session"""
+        if self.db_session:
+            self.db_session.close()
 
     def classify_screenshot(self, screenshot_path: str) -> CLIClassificationResult:
         """
