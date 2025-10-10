@@ -65,3 +65,4 @@ config/disliked_profiles/
 
 # Claude
 CLAUDE.md
+.claude/*
