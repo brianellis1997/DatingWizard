@@ -141,9 +141,10 @@ export default function PreferencesPage() {
                   value={preferences[key] * 100}
                   onChange={(e) => {
                     const newValue = Number(e.target.value) / 100;
-                    const otherKeys = ['physical_weight', 'personality_weight', 'interest_weight'].filter(k => k !== key) as const;
+                    const allKeys = ['physical_weight', 'personality_weight', 'interest_weight'] as const;
+                    const otherKeys = allKeys.filter(k => k !== key);
                     const remaining = 1 - newValue;
-                    const currentOtherSum = otherKeys.reduce((sum, k) => sum + preferences[k], 0);
+                    const currentOtherSum = otherKeys.reduce((sum, k) => sum + (preferences[k] as number), 0);
 
                     if (currentOtherSum === 0) {
                       const splitRemaining = remaining / otherKeys.length;
@@ -156,8 +157,8 @@ export default function PreferencesPage() {
                       const ratio = remaining / currentOtherSum;
                       updatePrefsMutation.mutate({
                         [key]: newValue,
-                        [otherKeys[0]]: preferences[otherKeys[0]] * ratio,
-                        [otherKeys[1]]: preferences[otherKeys[1]] * ratio,
+                        [otherKeys[0]]: (preferences[otherKeys[0]] as number) * ratio,
+                        [otherKeys[1]]: (preferences[otherKeys[1]] as number) * ratio,
                       });
                     }
                   }}
