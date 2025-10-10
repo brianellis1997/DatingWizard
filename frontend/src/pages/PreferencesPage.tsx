@@ -139,13 +139,36 @@ export default function PreferencesPage() {
                   min="0"
                   max="100"
                   value={preferences[key] * 100}
-                  onChange={(e) =>
-                    updatePrefsMutation.mutate({ [key]: Number(e.target.value) / 100 })
-                  }
+                  onChange={(e) => {
+                    const newValue = Number(e.target.value) / 100;
+                    const otherKeys = ['physical_weight', 'personality_weight', 'interest_weight'].filter(k => k !== key) as const;
+                    const remaining = 1 - newValue;
+                    const currentOtherSum = otherKeys.reduce((sum, k) => sum + preferences[k], 0);
+
+                    if (currentOtherSum === 0) {
+                      const splitRemaining = remaining / otherKeys.length;
+                      updatePrefsMutation.mutate({
+                        [key]: newValue,
+                        [otherKeys[0]]: splitRemaining,
+                        [otherKeys[1]]: splitRemaining,
+                      });
+                    } else {
+                      const ratio = remaining / currentOtherSum;
+                      updatePrefsMutation.mutate({
+                        [key]: newValue,
+                        [otherKeys[0]]: preferences[otherKeys[0]] * ratio,
+                        [otherKeys[1]]: preferences[otherKeys[1]] * ratio,
+                      });
+                    }
+                  }}
                   className="w-full"
                 />
               </div>
             ))}
+            <p className="text-sm text-gray-500 dark:text-gray-400 mt-2">
+              Total: {((preferences.physical_weight + preferences.personality_weight + preferences.interest_weight) * 100).toFixed(0)}%
+              (weights auto-adjust to sum to 100%)
+            </p>
           </div>
         </section>
       )}
