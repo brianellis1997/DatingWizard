@@ -1,0 +1,43 @@
+version: '3.8'
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: dating-wizard-backend
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./config:/app/config
+      - ./data:/app/data
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    environment:
+      - DATABASE_URL=sqlite:///./data/dating_wizard.db
+      - DEBUG=True
+    restart: unless-stopped
+    networks:
+      - dating-wizard-network
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    container_name: dating-wizard-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - dating-wizard-network
+
+networks:
+  dating-wizard-network:
+    driver: bridge
+
+volumes:
+  data:
+  uploads:
+  logs:

@@ -1,6 +1,7 @@
 # Environment variables
 .env
 .env.local
+frontend/.env
 
 # Python
 __pycache__/
@@ -62,6 +63,12 @@ models/
 config/user_preferences.json
 config/liked_profiles/
 config/disliked_profiles/
+
+# Node/Frontend
+frontend/node_modules/
+frontend/dist/
+frontend/.env
+*.local
 
 # Claude
 CLAUDE.md

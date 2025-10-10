@@ -2,33 +2,48 @@
 
 An AI-powered dating assistant that analyzes dating profiles using multimodal AI (computer vision + NLP) to find compatible matches based on your personalized preferences.
 
-## 🎉 **NEW: Working Prototype Available!**
+## 🎉 **NEW: Full-Stack Web Application!**
 
-The **classification prototype** is now complete and functional! This MVP allows you to:
-- ✅ Upload reference images of people you find attractive
-- ✅ Set personality traits and interests you value
-- ✅ Classify profile screenshots with detailed reasoning
-- ✅ Automatically discover and classify Instagram profiles
-- ✅ Measure accuracy with evaluation tools
+The **complete full-stack application** is ready! Features include:
+- ✅ Modern React web interface with drag-and-drop uploads
+- ✅ FastAPI backend with REST API
+- ✅ Docker deployment (single command!)
+- ✅ Reference image management
+- ✅ Real-time classification with detailed results
+- ✅ Dashboard with statistics and recent matches
+- ✅ Classification history with filtering
+- ✅ Dark mode support
 
-**[📚 See PROTOTYPE_GUIDE.md for complete instructions](PROTOTYPE_GUIDE.md)**
+**[📚 See DEPLOYMENT.md for deployment instructions](DEPLOYMENT.md)**
 
-### Quick Start
+### 🐳 Quick Start (Docker - Recommended)
 
 ```bash
-# Interactive setup wizard
-python quick_start.py
+# One command to start everything!
+docker-compose up --build
 
-# Or manually:
-# 1. Set up preferences
-python preference_cli.py
-
-# 2. Test on a screenshot
-python demo_classifier.py --mode single --screenshot path/to/profile.png
-
-# 3. Run Instagram pipeline
-python instagram_classifier_pipeline.py --query "fitness" --limit 20
+# Access at:
+# http://localhost - Web UI
+# http://localhost:8000/docs - API Documentation
 ```
+
+### 💻 Local Development
+
+```bash
+# Backend
+source wizard/bin/activate
+cd backend && uvicorn main:app --reload
+
+# Frontend (new terminal)
+cd frontend && npm run dev
+```
+
+### 📚 Documentation
+
+- **[DEPLOYMENT.md](DEPLOYMENT.md)** - Full deployment guide
+- **[PROTOTYPE_GUIDE.md](PROTOTYPE_GUIDE.md)** - CLI tools usage
+- **[FULLSTACK_PLAN.md](FULLSTACK_PLAN.md)** - Implementation details
+- **[PROTOTYPE_SUMMARY.md](PROTOTYPE_SUMMARY.md)** - Technical summary
 
 ## Features
 
