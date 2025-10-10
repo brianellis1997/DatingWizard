@@ -44,7 +44,7 @@ export default function Dashboard() {
         />
         <StatCard
           title="Avg Confidence"
-          value={`${(stats?.avg_confidence * 100).toFixed(1) || 0}%`}
+          value={`${((stats?.avg_confidence ?? 0) * 100).toFixed(1)}%`}
           icon={TrendingUp}
           color="orange"
         />
