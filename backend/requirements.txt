@@ -32,6 +32,3 @@ requests==2.31.0
 # Utilities
 loguru==0.7.3
 python-dotenv==1.0.1
-
-# CORS
-python-cors==1.0.0
