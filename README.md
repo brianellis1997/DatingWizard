@@ -1,6 +1,34 @@
 # Dating Wizard 🧙‍♂️
 
-An AI-powered dating assistant that automates Tinder interactions, including smart swiping, personalized messaging, and calendar-integrated date scheduling.
+An AI-powered dating assistant that analyzes dating profiles using multimodal AI (computer vision + NLP) to find compatible matches based on your personalized preferences.
+
+## 🎉 **NEW: Working Prototype Available!**
+
+The **classification prototype** is now complete and functional! This MVP allows you to:
+- ✅ Upload reference images of people you find attractive
+- ✅ Set personality traits and interests you value
+- ✅ Classify profile screenshots with detailed reasoning
+- ✅ Automatically discover and classify Instagram profiles
+- ✅ Measure accuracy with evaluation tools
+
+**[📚 See PROTOTYPE_GUIDE.md for complete instructions](PROTOTYPE_GUIDE.md)**
+
+### Quick Start
+
+```bash
+# Interactive setup wizard
+python quick_start.py
+
+# Or manually:
+# 1. Set up preferences
+python preference_cli.py
+
+# 2. Test on a screenshot
+python demo_classifier.py --mode single --screenshot path/to/profile.png
+
+# 3. Run Instagram pipeline
+python instagram_classifier_pipeline.py --query "fitness" --limit 20
+```
 
 ## Features
 
