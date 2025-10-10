@@ -58,6 +58,10 @@ models/
 *.pkl
 *.pth
 *.h5
+*.png
+*.jpg
+*.jpeg
+*.avif
 
 # User preferences
 config/user_preferences.json
