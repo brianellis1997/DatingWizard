@@ -246,7 +246,7 @@ class ModelVersionResponse(BaseModel):
     created_at: datetime
     trained_at: Optional[datetime]
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, protected_namespaces=())
 
 
 class ModelVersionUpdate(BaseModel):
