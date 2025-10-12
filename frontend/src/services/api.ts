@@ -166,6 +166,18 @@ export const resultsApi = {
     const { data } = await api.get<ClassifierStats>('/results/stats/classifier');
     return data;
   },
+
+  // Active Learning - Feedback
+  submitFeedback: async (resultId: number, feedback: 'like' | 'dislike' | 'super_like') => {
+    const { data } = await api.post<ClassificationResult>(`/results/${resultId}/feedback`, {
+      feedback,
+    });
+    return data;
+  },
+
+  removeFeedback: async (resultId: number) => {
+    await api.delete(`/results/${resultId}/feedback`);
+  },
 };
 
 // Instagram API

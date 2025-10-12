@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useDropzone } from 'react-dropzone';
-import { classificationApi } from '../services/api';
-import { Upload, CheckCircle, XCircle } from 'lucide-react';
+import { classificationApi, resultsApi } from '../services/api';
+import { Upload, CheckCircle, XCircle, ThumbsUp, ThumbsDown, Star } from 'lucide-react';
 import type { ClassificationResult } from '../types';
 
 export default function ClassifyPage() {
@@ -13,6 +13,18 @@ export default function ClassifyPage() {
     mutationFn: classificationApi.classifyScreenshot,
     onSuccess: (data) => {
       setResults((prev) => [data, ...prev]);
+      queryClient.invalidateQueries({ queryKey: ['overview-stats'] });
+    },
+  });
+
+  const feedbackMutation = useMutation({
+    mutationFn: ({ resultId, feedback }: { resultId: number; feedback: 'like' | 'dislike' | 'super_like' }) =>
+      resultsApi.submitFeedback(resultId, feedback),
+    onSuccess: (updatedResult) => {
+      // Update the result in the local state
+      setResults((prev) =>
+        prev.map((r) => (r.id === updatedResult.id ? updatedResult : r))
+      );
       queryClient.invalidateQueries({ queryKey: ['overview-stats'] });
     },
   });
@@ -107,7 +119,7 @@ export default function ClassifyPage() {
 
                   {/* Reasons */}
                   {result.reasons.length > 0 && (
-                    <div>
+                    <div className="mb-4">
                       <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         💡 Reasons:
                       </p>
@@ -123,6 +135,59 @@ export default function ClassifyPage() {
                       </ul>
                     </div>
                   )}
+
+                  {/* Feedback Buttons */}
+                  <div className="border-t border-gray-200 dark:border-gray-700 pt-4 mt-4">
+                    <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                      🎯 Help improve the model:
+                    </p>
+                    <div className="flex gap-3">
+                      <button
+                        onClick={() => feedbackMutation.mutate({ resultId: result.id, feedback: 'dislike' })}
+                        disabled={feedbackMutation.isPending}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          result.user_feedback === 'dislike'
+                            ? 'bg-red-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-red-100 dark:hover:bg-red-900/30'
+                        }`}
+                      >
+                        <ThumbsDown className="w-5 h-5" />
+                        Dislike
+                      </button>
+
+                      <button
+                        onClick={() => feedbackMutation.mutate({ resultId: result.id, feedback: 'like' })}
+                        disabled={feedbackMutation.isPending}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          result.user_feedback === 'like'
+                            ? 'bg-green-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-green-100 dark:hover:bg-green-900/30'
+                        }`}
+                      >
+                        <ThumbsUp className="w-5 h-5" />
+                        Like
+                      </button>
+
+                      <button
+                        onClick={() => feedbackMutation.mutate({ resultId: result.id, feedback: 'super_like' })}
+                        disabled={feedbackMutation.isPending}
+                        className={`flex-1 flex items-center justify-center gap-2 px-4 py-2 rounded-lg transition-colors ${
+                          result.user_feedback === 'super_like'
+                            ? 'bg-yellow-500 text-white'
+                            : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-yellow-100 dark:hover:bg-yellow-900/30'
+                        }`}
+                      >
+                        <Star className="w-5 h-5" />
+                        Super Like
+                      </button>
+                    </div>
+
+                    {result.user_feedback && (
+                      <p className="text-xs text-gray-500 dark:text-gray-400 mt-2 text-center">
+                        ✓ Feedback recorded - this helps train the model!
+                      </p>
+                    )}
+                  </div>
                 </div>
               </div>
             </div>
