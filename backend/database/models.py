@@ -80,10 +80,16 @@ class ClassificationResult(Base):
     age = Column(Integer)
     bio = Column(Text)
 
+    # Active learning fields
+    model_version_id = Column(Integer, ForeignKey("model_versions.id"))
+    user_feedback = Column(String)  # 'like', 'dislike', 'super_like', None
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
+    feedback_at = Column(DateTime(timezone=True))
 
     # Relationships
     reasons = relationship("ClassificationReason", back_populates="result", cascade="all, delete-orphan")
+    model_version = relationship("ModelVersion", back_populates="classifications")
 
 
 class ClassificationReason(Base):
@@ -135,3 +141,61 @@ class InstagramResult(Base):
     # Relationships
     search = relationship("InstagramSearch", back_populates="results")
     classification = relationship("ClassificationResult")
+
+
+class ModelVersion(Base):
+    """Tracks different versions of the classification model"""
+    __tablename__ = "model_versions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    version_number = Column(Integer, nullable=False, unique=True)
+    model_type = Column(String, nullable=False)  # 'resnet50', 'clip', 'fine_tuned'
+    model_path = Column(String)  # Path to saved model weights
+    is_active = Column(Boolean, default=False)
+
+    # Training metadata
+    training_samples = Column(Integer, default=0)
+    training_accuracy = Column(Float)
+    validation_accuracy = Column(Float)
+
+    # Performance metrics
+    total_predictions = Column(Integer, default=0)
+    likes = Column(Integer, default=0)
+    dislikes = Column(Integer, default=0)
+    super_likes = Column(Integer, default=0)
+
+    # Timestamps
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    trained_at = Column(DateTime(timezone=True))
+
+    # Relationships
+    classifications = relationship("ClassificationResult", back_populates="model_version")
+
+
+class TrainingJob(Base):
+    """Tracks model training jobs"""
+    __tablename__ = "training_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    model_version_id = Column(Integer, ForeignKey("model_versions.id"))
+    status = Column(String, nullable=False)  # 'pending', 'running', 'completed', 'failed'
+
+    # Training parameters
+    epochs = Column(Integer, default=10)
+    batch_size = Column(Integer, default=32)
+    learning_rate = Column(Float, default=0.001)
+
+    # Progress tracking
+    current_epoch = Column(Integer, default=0)
+    current_loss = Column(Float)
+    current_accuracy = Column(Float)
+
+    # Results
+    final_loss = Column(Float)
+    final_accuracy = Column(Float)
+    error_message = Column(Text)
+
+    # Timestamps
+    started_at = Column(DateTime(timezone=True))
+    completed_at = Column(DateTime(timezone=True))
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
