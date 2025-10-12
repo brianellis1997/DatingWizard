@@ -37,6 +37,9 @@ class Settings(BaseSettings):
 
     # Classifier
     PREFERENCES_PATH: str = "config/preferences.json"
+    # Model type: "resnet50" or "clip"
+    CLASSIFIER_MODEL: str = "clip"
+    CLIP_MODEL_NAME: str = "openai/clip-vit-base-patch32"
 
     # Pagination
     DEFAULT_PAGE_SIZE: int = 20
