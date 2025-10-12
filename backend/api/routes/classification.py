@@ -9,7 +9,7 @@ import shutil
 from pathlib import Path
 
 from backend.database.db import get_db
-from backend.database.models import ClassificationResult, ClassificationReason
+from backend.database.models import ClassificationResult, ClassificationReason, ModelVersion
 from backend.models.schemas import (
     ClassificationResultResponse,
     BatchClassificationRequest,
@@ -36,6 +36,9 @@ async def classify_screenshot(
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
+    # Get active model version
+    active_model = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
     # Classify
     classifier_service = get_classifier_service()
     result = classifier_service.classify_screenshot(str(file_path))
@@ -50,7 +53,8 @@ async def classify_screenshot(
         interest_score=result.component_scores['interests'],
         name=result.extracted_data.get('name'),
         age=result.extracted_data.get('age'),
-        bio=result.extracted_data.get('bio')
+        bio=result.extracted_data.get('bio'),
+        model_version_id=active_model.id if active_model else None
     )
     db.add(db_result)
     db.flush()
@@ -84,6 +88,9 @@ async def classify_batch(
             shutil.copyfileobj(file.file, buffer)
         file_paths.append(str(file_path))
 
+    # Get active model version
+    active_model = db.query(ModelVersion).filter(ModelVersion.is_active == True).first()
+
     # Classify batch
     classifier_service = get_classifier_service()
     results = classifier_service.classify_batch(file_paths)
@@ -102,7 +109,8 @@ async def classify_batch(
             interest_score=result.component_scores['interests'],
             name=result.extracted_data.get('name'),
             age=result.extracted_data.get('age'),
-            bio=result.extracted_data.get('bio')
+            bio=result.extracted_data.get('bio'),
+            model_version_id=active_model.id if active_model else None
         )
         db.add(db_result)
         db.flush()
