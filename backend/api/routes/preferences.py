@@ -134,9 +134,9 @@ async def update_preferences(
     db.commit()
     db.refresh(pref)
 
-    # Reload classifier
-    classifier_service = get_classifier_service()
-    classifier_service.reload_classifier()
+    # Note: No need to reload classifier for weight changes
+    # Weights are read from DB on each classification
+    # Only reload when reference images or traits/interests change
 
     return pref
 

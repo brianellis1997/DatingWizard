@@ -337,7 +337,14 @@ class CLIPClassifier:
         result.component_scores['personality'] = personality_score
         result.component_scores['interests'] = interest_score
 
-        # Get weights from preferences
+        # Get weights from preferences (reload from database to get latest values)
+        if hasattr(self.pref_manager, 'parent'):
+            # MockPrefManager - reload from database
+            self.preferences = self.pref_manager.parent._load_preferences_from_db()
+        elif hasattr(self, '_load_preferences_from_db'):
+            # DatabaseAwareCLIPClassifier - reload from database
+            self.preferences = self._load_preferences_from_db()
+
         result.weights = self.preferences['scoring_weights']
 
         # Calculate weighted confidence score

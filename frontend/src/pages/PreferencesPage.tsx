@@ -41,7 +41,30 @@ export default function PreferencesPage() {
 
   const updatePrefsMutation = useMutation({
     mutationFn: preferencesApi.updatePreferences,
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['preferences'] }),
+    onMutate: async (newPrefs) => {
+      // Cancel outgoing refetches
+      await queryClient.cancelQueries({ queryKey: ['preferences'] });
+
+      // Snapshot previous value
+      const previousPrefs = queryClient.getQueryData(['preferences']);
+
+      // Optimistically update
+      queryClient.setQueryData(['preferences'], (old: any) => ({
+        ...old,
+        ...newPrefs,
+      }));
+
+      return { previousPrefs };
+    },
+    onError: (_err, _newPrefs, context) => {
+      // Rollback on error
+      if (context?.previousPrefs) {
+        queryClient.setQueryData(['preferences'], context.previousPrefs);
+      }
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['preferences'] });
+    },
   });
 
   const addTraitMutation = useMutation({
