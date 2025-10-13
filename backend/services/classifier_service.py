@@ -49,6 +49,22 @@ class DatabaseAwareCLIPClassifier(CLIPClassifier):
         self.positive_examples = []
         self.negative_examples = []
 
+        # Create a mock pref_manager that redirects to our methods
+        class MockPrefManager:
+            def __init__(self, parent):
+                self.parent = parent
+
+            def get_personality_traits(self):
+                return self.parent.get_personality_traits()
+
+            def get_shared_interests(self):
+                return self.parent.get_shared_interests()
+
+            def get_reference_images(self):
+                return []  # Not needed, we load from DB directly
+
+        self.pref_manager = MockPrefManager(self)
+
         self._load_all_training_data_from_db()
 
         logger.info(f"✅ CLIP classifier loaded {len(self.reference_features)} reference images from database")
