@@ -267,19 +267,10 @@ class CLIPClassifier:
                     reasons.append("Bio somewhat matches your personality preferences")
                     return float(text_similarity), reasons
 
-        # Fall back to image-text similarity (CLIP's cross-modal understanding)
-        # This is powerful - CLIP can match personality descriptions to visual cues
-        image_text_similarity = cosine_similarity(
-            desired_features.reshape(1, -1),
-            screenshot_features.reshape(1, -1)
-        )[0][0]
-
-        if image_text_similarity > 0.5:
-            reasons.append("Visual cues suggest personality compatibility")
-        else:
-            reasons.append("Personality match unclear from visual information")
-
-        return float(np.clip(image_text_similarity, 0, 1)), reasons
+        # No bio text - return neutral score
+        # Don't penalize profiles without text, just give neutral 50%
+        reasons.append("No bio text to analyze personality match")
+        return 0.5, reasons
 
     def _calculate_interest_score(self, bio_text: str) -> tuple[float, List[str]]:
         """Calculate shared interests score"""
