@@ -140,6 +140,16 @@ async def submit_feedback(
         model_version = db.query(ModelVersion).filter(ModelVersion.id == result.model_version_id).first()
 
         if model_version:
+            # Initialize metrics if None (for backwards compatibility)
+            if model_version.likes is None:
+                model_version.likes = 0
+            if model_version.dislikes is None:
+                model_version.dislikes = 0
+            if model_version.super_likes is None:
+                model_version.super_likes = 0
+            if model_version.total_predictions is None:
+                model_version.total_predictions = 0
+
             # Increment appropriate counter
             if feedback_data.feedback == 'like':
                 model_version.likes += 1
