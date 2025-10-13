@@ -180,6 +180,37 @@ class DatabaseAwareCLIPClassifier(CLIPClassifier):
         """Get shared interests from preferences"""
         return self.preferences.get('shared_interests', [])
 
+    def extract_embedding(self, image_path: str):
+        """
+        Extract CLIP image embedding for storage in database
+
+        Returns:
+            numpy array of shape (512,) normalized embedding
+        """
+        import torch
+        import numpy as np
+        from PIL import Image
+
+        try:
+            image = Image.open(image_path).convert('RGB')
+
+            # Preprocess and extract features
+            inputs = self.processor(images=image, return_tensors="pt")
+            inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+            with torch.no_grad():
+                image_features = self.model.get_image_features(**inputs)
+                # Normalize (important for cosine similarity)
+                image_features = image_features / image_features.norm(dim=-1, keepdim=True)
+
+            # Convert to numpy for storage
+            embedding = image_features.cpu().numpy().squeeze()
+            return embedding
+
+        except Exception as e:
+            logger.error(f"Failed to extract embedding from {image_path}: {e}")
+            return None
+
 
 class DatabaseAwareClassifier(DatingClassifier):
     """Extended classifier that loads training data from database"""

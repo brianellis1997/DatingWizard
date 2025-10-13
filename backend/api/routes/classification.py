@@ -43,6 +43,17 @@ async def classify_screenshot(
     classifier_service = get_classifier_service()
     result = classifier_service.classify_screenshot(str(file_path))
 
+    # Extract CLIP embedding for storage
+    import pickle
+    image_embedding = None
+    embedding_model_version = None
+
+    if hasattr(classifier_service.classifier, 'extract_embedding'):
+        embedding = classifier_service.classifier.extract_embedding(str(file_path))
+        if embedding is not None:
+            image_embedding = pickle.dumps(embedding)
+            embedding_model_version = "openai/clip-vit-base-patch32"
+
     # Save to database
     db_result = ClassificationResult(
         screenshot_path=str(file_path),
@@ -54,7 +65,9 @@ async def classify_screenshot(
         name=result.extracted_data.get('name'),
         age=result.extracted_data.get('age'),
         bio=result.extracted_data.get('bio'),
-        model_version_id=active_model.id if active_model else None
+        model_version_id=active_model.id if active_model else None,
+        image_embedding=image_embedding,
+        embedding_model_version=embedding_model_version
     )
     db.add(db_result)
     db.flush()

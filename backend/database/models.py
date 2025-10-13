@@ -2,7 +2,7 @@
 SQLAlchemy Database Models
 """
 
-from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, Float, Boolean, DateTime, ForeignKey, Text, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
@@ -83,6 +83,11 @@ class ClassificationResult(Base):
     # Active learning fields
     model_version_id = Column(Integer, ForeignKey("model_versions.id"))
     user_feedback = Column(String)  # 'like', 'dislike', 'super_like', None
+
+    # Embedding storage for training
+    image_embedding = Column(LargeBinary)  # CLIP image embedding (512-dim vector)
+    text_embedding = Column(LargeBinary)   # CLIP text embedding (512-dim vector)
+    embedding_model_version = Column(String)  # Which model created embeddings
 
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     feedback_at = Column(DateTime(timezone=True))
