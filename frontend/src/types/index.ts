@@ -56,6 +56,10 @@ export interface ClassificationResult {
   bio?: string;
   created_at: string;
   reasons: ClassificationReason[];
+  // Active learning feedback fields
+  model_version_id?: number | null;
+  user_feedback?: 'like' | 'dislike' | 'super_like' | null;
+  feedback_at?: string | null;
 }
 
 export interface ClassifierStats {
