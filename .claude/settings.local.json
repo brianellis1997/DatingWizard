@@ -28,7 +28,10 @@
       "Bash(docker exec:*)",
       "Bash(docker ps:*)",
       "Bash(docker-compose restart:*)",
-      "Bash(curl:*)"
+      "Bash(curl:*)",
+      "Bash(docker-compose build:*)",
+      "Bash(docker run:*)",
+      "Bash(docker logs:*)"
     ],
     "deny": [],
     "ask": []

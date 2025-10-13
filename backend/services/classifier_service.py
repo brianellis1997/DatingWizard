@@ -13,10 +13,156 @@ from sqlalchemy.orm import Session
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', '..'))
 
 from src.analyzers.dating_classifier import DatingClassifier, ClassificationResult as CLIClassificationResult
+from src.analyzers.clip_classifier import CLIPClassifier
 from backend.config import settings
 from backend.database.db import SessionLocal
 from backend.database.models import ReferenceImage, PersonalityTrait, SharedInterest, Preference
 from loguru import logger
+
+
+class DatabaseAwareCLIPClassifier(CLIPClassifier):
+    """CLIP classifier that loads training data from database"""
+
+    def __init__(self, db: Session, model_name: str = None):
+        """Initialize with database session"""
+        self.db = db
+
+        # Don't call parent __init__ yet - we need to set up preferences first
+        # Initialize CLIP model and processor
+        import torch
+        from transformers import CLIPProcessor, CLIPModel as HFCLIPModel
+
+        model_name = model_name or settings.CLIP_MODEL_NAME
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+        logger.info(f"Initializing CLIP ({model_name}) on device: {self.device}")
+
+        self.model = HFCLIPModel.from_pretrained(model_name).to(self.device)
+        self.processor = CLIPProcessor.from_pretrained(model_name)
+        self.model.eval()
+
+        # Load preferences from database
+        self.preferences = self._load_preferences_from_db()
+
+        # Load reference features
+        self.reference_features = []
+        self.reference_text_features = []
+        self.positive_examples = []
+        self.negative_examples = []
+
+        self._load_all_training_data_from_db()
+
+        logger.info(f"✅ CLIP classifier loaded {len(self.reference_features)} reference images from database")
+        logger.info(f"Loaded {len(self.positive_examples)} positive examples")
+        logger.info(f"Loaded {len(self.negative_examples)} negative examples")
+
+    def _load_preferences_from_db(self) -> Dict:
+        """Load preferences from database in CLIP-compatible format"""
+        pref = self.db.query(Preference).first()
+
+        # Load personality traits
+        traits = self.db.query(PersonalityTrait).all()
+        trait_list = [{'trait': t.trait} for t in traits]
+
+        # Load interests
+        interests = self.db.query(SharedInterest).all()
+        interest_list = [{'interest': i.interest, 'is_dealbreaker': i.is_dealbreaker} for i in interests]
+
+        if not pref:
+            return {
+                'scoring_weights': {
+                    'physical': 0.6,
+                    'personality': 0.3,
+                    'interests': 0.1
+                },
+                'min_score': 0.6,
+                'super_like_score': 0.85,
+                'personality_traits': trait_list,
+                'shared_interests': interest_list
+            }
+
+        return {
+            'scoring_weights': {
+                'physical': pref.physical_weight,
+                'personality': pref.personality_weight,
+                'interests': pref.interest_weight
+            },
+            'min_score': pref.min_score,
+            'super_like_score': pref.super_like_score,
+            'personality_traits': trait_list,
+            'shared_interests': interest_list
+        }
+
+    def _load_all_training_data_from_db(self):
+        """Load training data from database"""
+        try:
+            ref_images = self.db.query(ReferenceImage).all()
+            logger.info(f"Found {len(ref_images)} reference images in database")
+
+            for ref_img in ref_images:
+                logger.debug(f"Loading CLIP features for: {ref_img.file_path}")
+                features = self._extract_image_features(ref_img.file_path)
+                if features is not None:
+                    self.reference_features.append({
+                        'features': features,
+                        'category': ref_img.category,
+                        'description': ref_img.description,
+                        'id': ref_img.id
+                    })
+
+                    # Also extract text features if description exists
+                    if ref_img.description:
+                        text_features = self._extract_text_features(ref_img.description)
+                        if text_features is not None:
+                            self.reference_text_features.append({
+                                'features': text_features,
+                                'description': ref_img.description
+                            })
+                else:
+                    logger.warning(f"Failed to extract CLIP features from {ref_img.file_path}")
+        except Exception as e:
+            logger.error(f"Failed to load reference images from database: {e}")
+
+        # Load positive/negative examples from file system (legacy support)
+        liked_dir = "config/liked_profiles"
+        if os.path.exists(liked_dir):
+            for img_file in os.listdir(liked_dir):
+                if img_file.endswith(('.jpg', '.png', '.jpeg')):
+                    img_path = os.path.join(liked_dir, img_file)
+                    features = self._extract_image_features(img_path)
+                    if features is not None:
+                        self.positive_examples.append(features)
+
+        disliked_dir = "config/disliked_profiles"
+        if os.path.exists(disliked_dir):
+            for img_file in os.listdir(disliked_dir):
+                if img_file.endswith(('.jpg', '.png', '.jpeg')):
+                    img_path = os.path.join(disliked_dir, img_file)
+                    features = self._extract_image_features(img_path)
+                    if features is not None:
+                        self.negative_examples.append(features)
+
+    def get_classifier_stats(self) -> Dict:
+        """Get classifier statistics (CLIP version)"""
+        return {
+            'reference_images': len(self.reference_features),
+            'positive_examples': len(self.positive_examples),
+            'negative_examples': len(self.negative_examples),
+            'total_training_data': len(self.reference_features) + len(self.positive_examples) + len(self.negative_examples),
+            'weights': self.preferences['scoring_weights'],
+            'min_score_threshold': self.preferences['min_score'],
+            'super_like_threshold': self.preferences['super_like_score'],
+            'model_type': 'CLIP',
+            'device': self.device
+        }
+
+    # Helper methods to match PreferenceManager interface
+    def get_personality_traits(self) -> List[Dict]:
+        """Get personality traits from preferences"""
+        return self.preferences.get('personality_traits', [])
+
+    def get_shared_interests(self) -> List[Dict]:
+        """Get shared interests from preferences"""
+        return self.preferences.get('shared_interests', [])
 
 
 class DatabaseAwareClassifier(DatingClassifier):
@@ -148,7 +294,7 @@ class ClassifierService:
         self._init_classifier()
 
     def _init_classifier(self):
-        """Initialize or reinitialize the classifier"""
+        """Initialize or reinitialize the classifier based on config"""
         try:
             # Close previous session if exists
             if self.db_session:
@@ -156,8 +302,22 @@ class ClassifierService:
 
             # Create new session
             self.db_session = SessionLocal()
-            self.classifier = DatabaseAwareClassifier(self.db_session)
-            logger.info("Database-aware classifier initialized successfully")
+
+            # Choose classifier based on config
+            model_type = settings.CLASSIFIER_MODEL.lower()
+
+            if model_type == "clip":
+                logger.info(f"🤖 Initializing CLIP classifier ({settings.CLIP_MODEL_NAME})")
+                self.classifier = DatabaseAwareCLIPClassifier(
+                    self.db_session,
+                    model_name=settings.CLIP_MODEL_NAME
+                )
+                logger.info("✅ CLIP classifier initialized successfully")
+            else:
+                logger.info("🤖 Initializing ResNet50 classifier")
+                self.classifier = DatabaseAwareClassifier(self.db_session)
+                logger.info("✅ ResNet50 classifier initialized successfully")
+
         except Exception as e:
             logger.error(f"Failed to initialize classifier: {e}")
             if self.db_session:
