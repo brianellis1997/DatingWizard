@@ -49,35 +49,35 @@ class InstagramScraper(ProfileScraper):
     def _setup_selenium(self):
         """Setup Selenium WebDriver for JavaScript-heavy pages"""
         try:
-            from selenium.webdriver.chrome.service import Service
-            from webdriver_manager.chrome import ChromeDriverManager
-            
             options = webdriver.ChromeOptions()
-            
+
+            # Chromium binary location in Docker
+            options.binary_location = "/usr/bin/chromium"
+
             # Stealth options
             options.add_argument('--disable-blink-features=AutomationControlled')
             options.add_experimental_option("excludeSwitches", ["enable-automation"])
             options.add_experimental_option('useAutomationExtension', False)
             options.add_argument("--disable-notifications")
             options.add_argument("--disable-popup-blocking")
-            
+
             # Performance options
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
-            
+
             if self.headless:
-                options.add_argument('--headless')
-            
+                options.add_argument('--headless=new')
+
             # User agent
             options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
-            
-            service = Service(ChromeDriverManager().install())
-            self.driver = webdriver.Chrome(service=service, options=options)
-            
+
+            # Use system chromedriver (installed via chromium-driver package)
+            self.driver = webdriver.Chrome(options=options)
+
             # Remove webdriver property
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
-            
+
             logger.info("Selenium driver initialized for Instagram scraping")
             
         except Exception as e:
