@@ -130,11 +130,14 @@ class InstagramScrapingService:
         """
         Scrape profiles from a hashtag search with conservative rate limiting.
 
+        NOTE: ALL profiles are stored regardless of score for active learning.
+        The min_score is just metadata - it doesn't filter results.
+
         Args:
             hashtag: Hashtag to search (without # symbol)
             db_session: SQLAlchemy database session
             limit: Maximum number of profiles to scrape
-            min_score: Minimum confidence score to consider a match
+            min_score: Stored as metadata only (not used for filtering)
 
         Returns:
             InstagramSearch object with results
