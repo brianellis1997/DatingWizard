@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Home, Settings, Image, History } from 'lucide-react';
+import { Home, Settings, Image, History, Instagram } from 'lucide-react';
 
 interface LayoutProps {
   children: ReactNode;
@@ -14,6 +14,7 @@ export default function Layout({ children }: LayoutProps) {
     { path: '/preferences', label: 'Preferences', icon: Settings },
     { path: '/classify', label: 'Classify', icon: Image },
     { path: '/history', label: 'History', icon: History },
+    { path: '/instagram', label: 'Instagram', icon: Instagram },
   ];
 
   return (

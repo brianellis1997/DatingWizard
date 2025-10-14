@@ -5,6 +5,7 @@ import Dashboard from './pages/Dashboard';
 import PreferencesPage from './pages/PreferencesPage';
 import ClassifyPage from './pages/ClassifyPage';
 import HistoryPage from './pages/HistoryPage';
+import InstagramScraperPage from './pages/InstagramScraperPage';
 import './index.css';
 
 const queryClient = new QueryClient({
@@ -26,6 +27,7 @@ function App() {
             <Route path="/preferences" element={<PreferencesPage />} />
             <Route path="/classify" element={<ClassifyPage />} />
             <Route path="/history" element={<HistoryPage />} />
+            <Route path="/instagram" element={<InstagramScraperPage />} />
           </Routes>
         </Layout>
       </Router>
