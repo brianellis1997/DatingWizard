@@ -104,6 +104,19 @@ export interface InstagramResult {
   url?: string;
   followers?: number;
   profile_image_url?: string;
+
+  // Classification fields (denormalized for quick access)
+  screenshot_path?: string;
+  confidence_score?: number;
+  physical_score?: number;
+  personality_score?: number;
+  interest_score?: number;
+  is_match?: boolean;
+
+  // User feedback
+  user_feedback?: 'like' | 'dislike' | 'super_like';
+  feedback_at?: string;
+
   created_at: string;
   classification?: ClassificationResult;
 }

@@ -182,8 +182,9 @@ export const resultsApi = {
 
 // Instagram API
 export const instagramApi = {
-  search: async (query: string, limit: number = 20, minScore: number = 0.6) => {
-    const { data } = await api.post<InstagramSearch>('/instagram/search', {
+  // Scraping
+  scrapeHashtag: async (query: string, limit: number = 20, minScore: number = 0.6) => {
+    const { data } = await api.post<InstagramSearch>('/instagram/scrape/hashtag', {
       query,
       limit,
       min_score: minScore,
@@ -191,6 +192,14 @@ export const instagramApi = {
     return data;
   },
 
+  scrapeUsername: async (username: string) => {
+    const { data } = await api.post<InstagramResult>(`/instagram/scrape/username`, null, {
+      params: { username },
+    });
+    return data;
+  },
+
+  // Searches
   listSearches: async (skip: number = 0, limit: number = 20) => {
     const { data } = await api.get<InstagramSearch[]>('/instagram/searches', {
       params: { skip, limit },
@@ -201,6 +210,39 @@ export const instagramApi = {
   getSearch: async (id: number) => {
     const { data } = await api.get<InstagramSearch>(`/instagram/searches/${id}`);
     return data;
+  },
+
+  deleteSearch: async (id: number) => {
+    await api.delete(`/instagram/searches/${id}`);
+  },
+
+  // Results
+  listResults: async (skip: number = 0, limit: number = 20, matchesOnly: boolean = false) => {
+    const { data } = await api.get<InstagramResult[]>('/instagram/results', {
+      params: { skip, limit, matches_only: matchesOnly },
+    });
+    return data;
+  },
+
+  getResult: async (id: number) => {
+    const { data } = await api.get<InstagramResult>(`/instagram/results/${id}`);
+    return data;
+  },
+
+  deleteResult: async (id: number) => {
+    await api.delete(`/instagram/results/${id}`);
+  },
+
+  // Feedback
+  submitFeedback: async (resultId: number, feedback: 'like' | 'dislike' | 'super_like') => {
+    const { data } = await api.post<InstagramResult>(`/instagram/results/${resultId}/feedback`, {
+      feedback,
+    });
+    return data;
+  },
+
+  removeFeedback: async (resultId: number) => {
+    await api.delete(`/instagram/results/${resultId}/feedback`);
   },
 };
 

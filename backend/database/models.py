@@ -141,6 +141,22 @@ class InstagramResult(Base):
     followers = Column(Integer)
     profile_image_url = Column(String)
 
+    # Screenshot and embeddings (for CLIP integration)
+    screenshot_path = Column(String)
+    image_embedding = Column(LargeBinary)  # CLIP image embedding (512-dim vector)
+    embedding_model_version = Column(String)  # Which model created embeddings
+
+    # Classification scores (denormalized for quick access)
+    confidence_score = Column(Float)
+    physical_score = Column(Float)
+    personality_score = Column(Float)
+    interest_score = Column(Float)
+    is_match = Column(Boolean)
+
+    # User feedback for training
+    user_feedback = Column(String)  # 'like', 'dislike', 'super_like', None
+    feedback_at = Column(DateTime(timezone=True))
+
     created_at = Column(DateTime(timezone=True), server_default=func.now())
 
     # Relationships

@@ -151,6 +151,19 @@ class InstagramResultResponse(BaseModel):
     url: Optional[str]
     followers: Optional[int]
     profile_image_url: Optional[str]
+
+    # Classification fields (denormalized for quick access)
+    screenshot_path: Optional[str]
+    confidence_score: Optional[float]
+    physical_score: Optional[float]
+    personality_score: Optional[float]
+    interest_score: Optional[float]
+    is_match: Optional[bool]
+
+    # User feedback
+    user_feedback: Optional[str]
+    feedback_at: Optional[datetime]
+
     created_at: datetime
     classification: Optional[ClassificationResultResponse]
 
