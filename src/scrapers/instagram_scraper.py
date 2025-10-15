@@ -322,7 +322,10 @@ class InstagramScraper(ProfileScraper):
                 # Check if profile exists
                 wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'main')))
             except TimeoutException:
-                logger.warning(f"Profile {username} may not exist or failed to load")
+                # Save debug screenshot to see what Instagram is showing
+                debug_screenshot = f"uploads/screenshots/instagram/DEBUG_{username}_{int(time.time())}.png"
+                self.driver.save_screenshot(debug_screenshot)
+                logger.warning(f"Profile {username} may not exist or failed to load. Debug screenshot: {debug_screenshot}")
                 return None
             
             # Extract profile data
