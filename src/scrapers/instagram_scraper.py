@@ -11,6 +11,7 @@ from typing import Dict, List, Optional, Iterator
 from urllib.parse import quote_plus, urljoin
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -73,7 +74,8 @@ class InstagramScraper(ProfileScraper):
             options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
 
             # Use system chromedriver (installed via chromium-driver package)
-            self.driver = webdriver.Chrome(options=options)
+            service = Service(executable_path='/usr/bin/chromedriver')
+            self.driver = webdriver.Chrome(service=service, options=options)
 
             # Remove webdriver property
             self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
