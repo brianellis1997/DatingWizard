@@ -1,5 +1,6 @@
 # Core automation
 selenium
+undetected-chromedriver
 pyautogui
 webdriver-manager
 

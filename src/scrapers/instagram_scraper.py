@@ -6,12 +6,12 @@ Uses web scraping with proper rate limiting and ethical practices
 import re
 import json
 import time
+import random
 import requests
 from typing import Dict, List, Optional, Iterator
 from urllib.parse import quote_plus, urljoin
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
+import undetected_chromedriver as uc
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
@@ -48,42 +48,41 @@ class InstagramScraper(ProfileScraper):
         return SourceType.INSTAGRAM
     
     def _setup_selenium(self):
-        """Setup Selenium WebDriver for JavaScript-heavy pages"""
+        """Setup undetected-chromedriver for stealth Instagram scraping"""
         try:
-            options = webdriver.ChromeOptions()
+            options = uc.ChromeOptions()
 
             # Chromium binary location in Docker
             options.binary_location = "/usr/bin/chromium"
 
-            # Stealth options
-            options.add_argument('--disable-blink-features=AutomationControlled')
-            options.add_experimental_option("excludeSwitches", ["enable-automation"])
-            options.add_experimental_option('useAutomationExtension', False)
+            # Additional stealth arguments
             options.add_argument("--disable-notifications")
             options.add_argument("--disable-popup-blocking")
-
-            # Performance options
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
 
+            # Window size to avoid mobile layout
+            options.add_argument('--window-size=1920,1080')
+
             if self.headless:
                 options.add_argument('--headless=new')
 
-            # User agent
-            options.add_argument('user-agent=Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36')
+            # Use undetected-chromedriver with custom chromedriver path
+            self.driver = uc.Chrome(
+                options=options,
+                driver_executable_path='/usr/bin/chromedriver',
+                version_main=None,  # Skip version detection
+                use_subprocess=True
+            )
 
-            # Use system chromedriver (installed via chromium-driver package)
-            service = Service(executable_path='/usr/bin/chromedriver')
-            self.driver = webdriver.Chrome(service=service, options=options)
+            # Random initial delay to appear more human
+            time.sleep(random.uniform(1, 3))
 
-            # Remove webdriver property
-            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+            logger.info("Undetected-chromedriver initialized for Instagram scraping")
 
-            logger.info("Selenium driver initialized for Instagram scraping")
-            
         except Exception as e:
-            logger.warning(f"Failed to setup Selenium: {e}. Falling back to requests only.")
+            logger.warning(f"Failed to setup undetected-chromedriver: {e}. Falling back to requests only.")
             self.use_selenium = False
     
     def search_profiles(self, query: str, limit: int = 50, **kwargs) -> ScrapingResult:
@@ -310,14 +309,21 @@ class InstagramScraper(ProfileScraper):
             return None
     
     def _get_profile_data_selenium(self, username: str) -> Optional[ProfileData]:
-        """Get profile data using Selenium"""
+        """Get profile data using Selenium with human-like behavior"""
         try:
             url = f"https://www.instagram.com/{username}/"
+
+            # Random delay before navigation (2-5 seconds)
+            time.sleep(random.uniform(2, 5))
+
             self.driver.get(url)
-            
-            # Wait for profile to load
-            wait = WebDriverWait(self.driver, 10)
-            
+
+            # Random delay after page load (1-3 seconds)
+            time.sleep(random.uniform(1, 3))
+
+            # Wait for profile to load with increased timeout
+            wait = WebDriverWait(self.driver, 15)
+
             try:
                 # Check if profile exists
                 wait.until(EC.presence_of_element_located((By.CSS_SELECTOR, 'main')))
