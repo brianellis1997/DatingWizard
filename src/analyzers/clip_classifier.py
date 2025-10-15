@@ -97,7 +97,8 @@ class CLIPClassifier:
     def _extract_text_features(self, text: str) -> Optional[np.ndarray]:
         """Extract CLIP text features from a description"""
         try:
-            inputs = self.processor(text=[text], return_tensors="pt", padding=True).to(self.device)
+            # Truncate text to max 77 tokens (CLIP limit)
+            inputs = self.processor(text=[text], return_tensors="pt", padding=True, truncation=True, max_length=77).to(self.device)
 
             with torch.no_grad():
                 text_features = self.model.get_text_features(**inputs)

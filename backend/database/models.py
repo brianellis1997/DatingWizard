@@ -130,7 +130,7 @@ class InstagramResult(Base):
     __tablename__ = "instagram_results"
 
     id = Column(Integer, primary_key=True, index=True)
-    search_id = Column(Integer, ForeignKey("instagram_searches.id"), nullable=False)
+    search_id = Column(Integer, ForeignKey("instagram_searches.id"), nullable=True)  # Nullable for single username scrapes
     classification_result_id = Column(Integer, ForeignKey("classification_results.id"))
 
     # Instagram data
