@@ -261,9 +261,13 @@ export default function InstagramScraperPage() {
                 {result.screenshot_path && (
                   <div className="mb-3">
                     <img
-                      src={`/api/screenshots/${result.screenshot_path.split('/').pop()}`}
+                      src={`http://localhost:8000/${result.screenshot_path}`}
                       alt={result.username}
                       className="w-full h-48 object-cover rounded-lg"
+                      onError={(e) => {
+                        console.error('Failed to load image:', result.screenshot_path);
+                        e.currentTarget.style.display = 'none';
+                      }}
                     />
                   </div>
                 )}
