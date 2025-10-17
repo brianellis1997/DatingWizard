@@ -46,7 +46,32 @@ class InstagramScraper(ProfileScraper):
     
     def get_source_type(self) -> SourceType:
         return SourceType.INSTAGRAM
-    
+
+    def _simulate_human_scrolling(self):
+        """Simulate human-like scrolling behavior"""
+        try:
+            # Random small scrolls
+            scroll_distance = random.randint(100, 300)
+            self.driver.execute_script(f"window.scrollBy(0, {scroll_distance});")
+            time.sleep(random.uniform(0.5, 1.5))
+
+            # Scroll back up slightly
+            self.driver.execute_script(f"window.scrollBy(0, -{scroll_distance // 2});")
+            time.sleep(random.uniform(0.3, 0.8))
+
+            # Random mouse movements
+            try:
+                body = self.driver.find_element(By.TAG_NAME, 'body')
+                from selenium.webdriver.common.action_chains import ActionChains
+                actions = ActionChains(self.driver)
+                actions.move_to_element_with_offset(body, random.randint(50, 200), random.randint(50, 200))
+                actions.perform()
+            except:
+                pass
+
+        except Exception as e:
+            logger.debug(f"Error during human scrolling simulation: {e}")
+
     def _setup_selenium(self):
         """Setup undetected-chromedriver for stealth Instagram scraping"""
         try:
@@ -55,15 +80,34 @@ class InstagramScraper(ProfileScraper):
             # Chromium binary location in Docker
             options.binary_location = "/usr/bin/chromium"
 
-            # Additional stealth arguments
+            # Enhanced stealth arguments
             options.add_argument("--disable-notifications")
             options.add_argument("--disable-popup-blocking")
             options.add_argument('--no-sandbox')
             options.add_argument('--disable-dev-shm-usage')
             options.add_argument('--disable-gpu')
+            options.add_argument('--disable-blink-features=AutomationControlled')
+            options.add_argument('--disable-infobars')
+            options.add_argument('--disable-extensions')
 
-            # Window size to avoid mobile layout
-            options.add_argument('--window-size=1920,1080')
+            # Randomize window size to appear more human
+            window_sizes = ['1920,1080', '1366,768', '1536,864', '1440,900']
+            options.add_argument(f'--window-size={random.choice(window_sizes)}')
+
+            # Randomize user agent
+            user_agents = [
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.1 Safari/605.1.15',
+                'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+                'Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+            ]
+            options.add_argument(f'--user-agent={random.choice(user_agents)}')
+
+            # Add language preference
+            options.add_argument('--lang=en-US,en')
+
+            # Enable persistent user data directory to maintain cookies/session
+            options.add_argument('--user-data-dir=/tmp/chrome-profile')
 
             if self.headless:
                 options.add_argument('--headless=new')
@@ -76,10 +120,24 @@ class InstagramScraper(ProfileScraper):
                 use_subprocess=True
             )
 
-            # Random initial delay to appear more human
-            time.sleep(random.uniform(1, 3))
+            # Execute CDP commands to hide automation
+            self.driver.execute_cdp_cmd('Network.setUserAgentOverride', {
+                "userAgent": self.driver.execute_script("return navigator.userAgent").replace('Headless', '')
+            })
 
-            logger.info("Undetected-chromedriver initialized for Instagram scraping")
+            # Override navigator.webdriver flag
+            self.driver.execute_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
+
+            # Add navigator properties to appear more like a real browser
+            self.driver.execute_script("""
+                Object.defineProperty(navigator, 'languages', {get: () => ['en-US', 'en']});
+                Object.defineProperty(navigator, 'plugins', {get: () => [1, 2, 3, 4, 5]});
+            """)
+
+            # Random initial delay to appear more human
+            time.sleep(random.uniform(2, 4))
+
+            logger.info("Undetected-chromedriver initialized with enhanced stealth for Instagram scraping")
 
         except Exception as e:
             logger.warning(f"Failed to setup undetected-chromedriver: {e}. Falling back to requests only.")
@@ -318,11 +376,72 @@ class InstagramScraper(ProfileScraper):
 
             self.driver.get(url)
 
-            # Random delay after page load (1-3 seconds)
-            time.sleep(random.uniform(1, 3))
+            # Random delay after page load (2-4 seconds)
+            time.sleep(random.uniform(2, 4))
+
+            # Human-like scrolling behavior
+            self._simulate_human_scrolling()
 
             # Wait for profile to load with increased timeout
-            wait = WebDriverWait(self.driver, 15)
+            wait = WebDriverWait(self.driver, 20)
+
+            # Check if we're blocked by Instagram login wall
+            page_source = self.driver.page_source
+            if 'loginForm' in page_source or 'Log in to Instagram' in page_source or 'Login • Instagram' in self.driver.title:
+                logger.warning(f"Instagram is showing login wall for {username}. Attempting to extract metadata...")
+
+                # Try to extract data from page metadata (og: tags)
+                try:
+                    profile_data = ProfileData(
+                        source_id=username,
+                        source_type=SourceType.INSTAGRAM,
+                        url=url,
+                        name=username
+                    )
+
+                    # Try to find og:image meta tag for profile picture
+                    try:
+                        og_image = self.driver.find_element(By.CSS_SELECTOR, 'meta[property="og:image"]')
+                        profile_img_url = og_image.get_attribute('content')
+                        if profile_img_url:
+                            profile_data.profile_images.append(profile_img_url)
+                            profile_data.image_count = 1
+                    except NoSuchElementException:
+                        pass
+
+                    # Try to find og:description for bio
+                    try:
+                        og_description = self.driver.find_element(By.CSS_SELECTOR, 'meta[property="og:description"]')
+                        description = og_description.get_attribute('content')
+                        if description:
+                            profile_data.bio = description
+                    except NoSuchElementException:
+                        pass
+
+                    # Try to find og:title for name
+                    try:
+                        og_title = self.driver.find_element(By.CSS_SELECTOR, 'meta[property="og:title"]')
+                        title = og_title.get_attribute('content')
+                        if title:
+                            profile_data.name = title
+                    except NoSuchElementException:
+                        pass
+
+                    # Save screenshot showing login wall
+                    debug_screenshot = f"uploads/screenshots/instagram/LOGIN_WALL_{username}_{int(time.time())}.png"
+                    self.driver.save_screenshot(debug_screenshot)
+
+                    if profile_data.profile_images or profile_data.bio:
+                        profile_data.confidence_score = 0.3  # Low confidence due to login wall
+                        logger.info(f"Extracted limited data for {username} from metadata despite login wall")
+                        return profile_data
+                    else:
+                        logger.error(f"Instagram login wall blocking access to {username}. No metadata available.")
+                        return None
+
+                except Exception as e:
+                    logger.error(f"Error extracting metadata from login wall: {e}")
+                    return None
 
             try:
                 # Check if profile exists
@@ -333,7 +452,7 @@ class InstagramScraper(ProfileScraper):
                 self.driver.save_screenshot(debug_screenshot)
                 logger.warning(f"Profile {username} may not exist or failed to load. Debug screenshot: {debug_screenshot}")
                 return None
-            
+
             # Extract profile data
             profile_data = ProfileData(
                 source_id=username,
